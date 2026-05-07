@@ -1,11 +1,3 @@
-# Projeto: Sistema de Gestão - Rede de Cinemas 🎬
-
-**Disciplina:** Engenharia de Software  
-**Professor:** Max  
-**Aluno:** Hanry (RA: 24001865)  
-
----
-
 ## 📌 1. Levantamento de Requisitos e Regras de Negócio
 
 ### Requisitos Funcionais (RF)
@@ -27,19 +19,23 @@
 
 ### A. Diagrama de Casos de Uso
 ```mermaid
-usecaseDiagram
-    actor "Administrador" as Admin
-    actor "Espectador" as Espectador
+flowchart LR
+    %% Atores
+    Admin([Administrador])
+    Espectador([Espectador])
 
-    package "Sistema Rede de Cinemas" {
-        usecase "Gerenciar Cinemas" as UC1
-        usecase "Gerenciar Filmes" as UC2
-        usecase "Gerenciar Sessões" as UC3
-        usecase "Registrar Público Diário" as UC4
-        usecase "Gerar Relatórios de Público" as UC5
-        usecase "Consultar Filmes em Cartaz" as UC6
-    }
+    %% Sistema e Casos de Uso
+    subgraph "Sistema Rede de Cinemas"
+        direction TB
+        UC1([Gerenciar Cinemas])
+        UC2([Gerenciar Filmes])
+        UC3([Gerenciar Sessões])
+        UC4([Registrar Público Diário])
+        UC5([Gerar Relatórios de Público])
+        UC6([Consultar Filmes em Cartaz])
+    end
 
+    %% Relacionamentos
     Admin --> UC1
     Admin --> UC2
     Admin --> UC3
@@ -47,7 +43,10 @@ usecaseDiagram
     Admin --> UC5
 
     Espectador --> UC6
-    classDiagram
+  ```
+
+```mermaid
+classDiagram
     class Cinema {
         -String nome
         -String endereco
@@ -77,7 +76,10 @@ usecaseDiagram
     Sala "1" -- "*" Sessao : abriga
     Filme "1" -- "*" Sessao : exibido em
 
-  stateDiagram-v2
+```
+
+```mermaid
+stateDiagram-v2
     [*] --> BuscarSessao : Administrador inicia registro
     BuscarSessao --> InformarPublico : Sessão encontrada
     InformarPublico --> ValidarCapacidade : Insere quantidade
@@ -93,8 +95,11 @@ usecaseDiagram
     
     RegistrarNoBanco --> AtualizarTotalizadores
     AtualizarTotalizadores --> [*] : Registro concluído
-    
-    sequenceDiagram
+
+```
+
+```mermaid
+sequenceDiagram
     actor Admin
     participant View as SessaoView
     participant Controller as SessaoController
@@ -119,3 +124,5 @@ usecaseDiagram
     Service-->>Controller: Sucesso
     Controller-->>View: Mensagem de sucesso
     View-->>Admin: "Público registrado com sucesso!"
+
+```
