@@ -1,32 +1,33 @@
-Com certeza, Hanry! Aqui está o conteúdo completo dos tópicos de 1 a 5.
+# Projeto: Sistema de Gestão - Rede de Cinemas 🎬
 
-Você pode copiar todo o bloco abaixo e colar diretamente dentro do seu arquivo modelagem.md.
-1. Levantamento de Requisitos e Regras de Negócio
+**Disciplina:** Engenharia de Software  
+**Professor:** Max  
+**Aluno:** Hanry (RA: 24001865)  
 
-Requisitos Funcionais (RF)
+---
 
-    RF01: O sistema deve permitir o cadastro e gerenciamento de cinemas (endereço e capacidade total).
+## 📌 1. Levantamento de Requisitos e Regras de Negócio
 
-    RF02: O sistema deve permitir o cadastro de filmes (título, duração, diretor, elenco, gênero).
+### Requisitos Funcionais (RF)
+* **RF01:** O sistema deve permitir o cadastro e gerenciamento de cinemas (endereço e capacidade total).
+* **RF02:** O sistema deve permitir o cadastro de filmes (título, duração, diretor, elenco, gênero).
+* **RF03:** O sistema deve permitir a alocação de filmes em sessões por cinema.
+* **RF04:** O sistema deve permitir o registro diário do público presente em cada sessão.
+* **RF05:** O sistema deve calcular e exibir a totalização de público por sessão, por filme e por cinema.
+* **RF06:** O sistema deve permitir a consulta dos filmes em cartaz e suas informações.
 
-    RF03: O sistema deve permitir a alocação de filmes em sessões por cinema.
+### Regras de Negócio (RN)
+* **RN01:** O intervalo de tempo entre duas sessões na mesma sala deve respeitar o tempo de limpeza (ex: 30 minutos).
+* **RN02:** O público registrado em uma sessão não pode ultrapassar a capacidade máxima da sala.
+* **RN03:** Um filme só pode ser colocado em cartaz se possuir todas as informações obrigatórias.
 
-    RF04: O sistema deve permitir o registro diário do público presente em cada sessão.
+---
 
-    RF05: O sistema deve calcular e exibir a totalização de público por sessão, por filme e por cinema.
+## 📊 2. Modelagem UML (Diagramas)
 
-    RF06: O sistema deve permitir a consulta dos filmes em cartaz e suas informações.
-
-Regras de Negócio (RN)
-
-    RN01: O intervalo de tempo entre duas sessões na mesma sala do cinema deve respeitar o tempo de limpeza e organização obrigatórios (ex: 30 minutos).
-
-    RN02: O público registrado em uma sessão não pode ultrapassar a capacidade máxima estipulada para aquela sala/cinema.
-
-    RN03: Um filme só pode ser colocado em cartaz se possuir todas as informações obrigatórias preenchidas.
-
-    2. Diagrama de Casos de Uso (Visão Geral)
-    usecaseDiagram
+### A. Diagrama de Casos de Uso
+```mermaid
+usecaseDiagram
     actor "Administrador" as Admin
     actor "Espectador" as Espectador
 
@@ -46,8 +47,6 @@ Regras de Negócio (RN)
     Admin --> UC5
 
     Espectador --> UC6
-
-    3. Diagrama de Classes do Domínio
     classDiagram
     class Cinema {
         -String nome
@@ -78,15 +77,14 @@ Regras de Negócio (RN)
     Sala "1" -- "*" Sessao : abriga
     Filme "1" -- "*" Sessao : exibido em
 
-    4. Diagramas de Atividade
-    stateDiagram-v2
+  stateDiagram-v2
     [*] --> BuscarSessao : Administrador inicia registro
     BuscarSessao --> InformarPublico : Sessão encontrada
-    InformarPublico --> ValidarCapacidade : Insere quantidade de espectadores
+    InformarPublico --> ValidarCapacidade : Insere quantidade
     
     state ValidarCapacidade {
         direction LR
-        VerificarLimites : Público <= Capacidade da Sala?
+        VerificarLimites : Público <= Capacidade?
     }
     
     ValidarCapacidade --> RegistrarNoBanco : [Válido]
@@ -95,8 +93,7 @@ Regras de Negócio (RN)
     
     RegistrarNoBanco --> AtualizarTotalizadores
     AtualizarTotalizadores --> [*] : Registro concluído
-
-    5. Diagramas de Sequência
+    
     sequenceDiagram
     actor Admin
     participant View as SessaoView

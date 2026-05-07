@@ -1,29 +1,7 @@
 import sqlite3
 from dataclasses import dataclass
 
-# ==========================================
-# CONFIGURAÇÃO INICIAL DO BANCO (DIDÁTICO)
-# ==========================================
-def setup_database():
-    conn = sqlite3.connect('cinema.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS sessao (
-            id INTEGER PRIMARY KEY,
-            filme_titulo TEXT,
-            capacidade_sala INTEGER,
-            publico_registrado INTEGER
-        )
-    ''')
-    # Inserindo dados mockados para teste
-    cursor.execute('DELETE FROM sessao')
-    cursor.execute('INSERT INTO sessao (id, filme_titulo, capacidade_sala, publico_registrado) VALUES (1, "Oppenheimer", 100, 0)')
-    conn.commit()
-    conn.close()
-
-# ==========================================
-# DOMAIN MODEL (Entidade)
-# ==========================================
+# --- Entidade (Model) ---
 @dataclass
 class Sessao:
     id: int
@@ -31,110 +9,73 @@ class Sessao:
     capacidade_sala: int
     publico_registrado: int
 
-# ==========================================
-# REPOSITORY LAYER
-# ==========================================
+# --- Camada de Persistência (Repository) ---
 class SessaoRepository:
     def __init__(self, db_path='cinema.db'):
         self.db_path = db_path
+        self._inicializar_banco()
 
-    def buscar_por_id(self, sessao_id: int) -> Sessao:
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute('SELECT id, filme_titulo, capacidade_sala, publico_registrado FROM sessao WHERE id = ?', (sessao_id,))
-        row = cursor.fetchone()
-        conn.close()
-        
-        if row:
-            return Sessao(id=row[0], filme_titulo=row[1], capacidade_sala=row[2], publico_registrado=row[3])
+    def _inicializar_banco(self):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute('''CREATE TABLE IF NOT EXISTS sessao 
+                (id INTEGER PRIMARY KEY, filme_titulo TEXT, 
+                capacidade_sala INTEGER, publico_registrado INTEGER)''')
+            # Dados iniciais de teste
+            conn.execute('INSERT OR IGNORE INTO sessao VALUES (1, "Batman", 150, 0)')
+
+    def buscar_por_id(self, sessao_id):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM sessao WHERE id = ?', (sessao_id,))
+            row = cursor.fetchone()
+            if row: return Sessao(*row)
         return None
 
-    def atualizar_publico(self, sessao_id: int, novo_publico: int):
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute('UPDATE sessao SET publico_registrado = ? WHERE id = ?', (novo_publico, sessao_id))
-        conn.commit()
-        conn.close()
+    def atualizar_publico(self, sessao_id, novo_total):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute('UPDATE sessao SET publico_registrado = ? WHERE id = ?', 
+                         (novo_total, sessao_id))
 
-# ==========================================
-# SERVICE LAYER (Regras de Negócio)
-# ==========================================
+# --- Camada de Negócio (Service) ---
 class SessaoService:
     def __init__(self, repository: SessaoRepository):
-        self.repository = repository
+        self.repo = repository
 
-    def registrar_publico(self, sessao_id: int, publico: int) -> str:
-        sessao = self.repository.buscar_por_id(sessao_id)
-        
+    def registrar_entrada_publico(self, sessao_id, quantidade):
+        sessao = self.repo.buscar_por_id(sessao_id)
         if not sessao:
             return "Erro: Sessão não encontrada."
         
-        # Regra de Negócio: Público não pode exceder capacidade
-        novo_total = sessao.publico_registrado + publico
-        if novo_total > sessao.capacidade_sala:
-            return f"Erro: O público total ({novo_total}) excede a capacidade da sala ({sessao.capacidade_sala})."
+        novo_publico = sessao.publico_registrado + quantidade
+        if novo_publico > sessao.capacidade_sala:
+            return f"Erro: Capacidade máxima excedida! (Tentativa: {novo_publico} / Limite: {sessao.capacidade_sala})"
         
-        self.repository.atualizar_publico(sessao_id, novo_total)
-        return f"Sucesso! Público atualizado. Total atual da sessão: {novo_total} espectadores."
+        self.repo.atualizar_publico(sessao_id, novo_publico)
+        return f"Sucesso! {quantidade} pessoas registradas. Total atual: {novo_publico}."
 
-# ==========================================
-# CONTROLLER LAYER
-# ==========================================
+# --- Camada de Controle (Controller) ---
 class SessaoController:
     def __init__(self, service: SessaoService):
         self.service = service
 
-    def processar_registro_publico(self, sessao_id_str: str, publico_str: str) -> str:
+    def executar_registro(self, id_sessao, qtd):
         try:
-            sessao_id = int(sessao_id_str)
-            publico = int(publico_str)
-            if publico < 0:
-                return "Erro: O público não pode ser negativo."
-            return self.service.registrar_publico(sessao_id, publico)
+            return self.service.registrar_entrada_publico(int(id_sessao), int(qtd))
         except ValueError:
-            return "Erro: Por favor, insira valores numéricos válidos."
+            return "Erro: Por favor, insira números válidos."
 
-# ==========================================
-# VIEW LAYER (Interface do Usuário / CLI)
-# ==========================================
-class SessaoView:
-    def __init__(self, controller: SessaoController):
-        self.controller = controller
-
-    def exibir_menu(self):
-        print("\n--- Sistema de Gestão de Cinemas ---")
-        print("1. Registrar Público da Sessão")
-        print("2. Sair")
-        
-    def iniciar(self):
-        while True:
-            self.exibir_menu()
-            opcao = input("Escolha uma opção: ")
-            
-            if opcao == '1':
-                sessao_id = input("Digite o ID da sessão (Use 1 para teste): ")
-                publico = input("Digite a quantidade de público a registrar: ")
-                
-                resultado = self.controller.processar_registro_publico(sessao_id, publico)
-                print(f"\n>> {resultado}")
-            
-            elif opcao == '2':
-                print("Encerrando o sistema...")
-                break
-            else:
-                print("Opção inválida.")
-
-# ==========================================
-# INJEÇÃO DE DEPENDÊNCIA E EXECUÇÃO
-# ==========================================
+# --- Interface Simples (View) ---
 if __name__ == "__main__":
-    setup_database() # Prepara o banco SQlite
+    banco = SessaoRepository()
+    servico = SessaoService(banco)
+    controle = SessaoController(servico)
+
+    print("-" * 40)
+    print("SISTEMA DE GESTÃO DE CINEMA")
+    print("-" * 40)
     
-    # Montando a arquitetura
-    repo = SessaoRepository()
-    service = SessaoService(repo)
-    controller = SessaoController(service)
-    view = SessaoView(controller)
+    id_s = input("Digite o ID da Sessão: ")
+    puv = input("Quantidade de público a registrar: ")
     
-    # Iniciando o sistema
-    view.iniciar()
+    resultado = controle.executar_registro(id_s, puv)
+    print(f"\nResultado: {resultado}\n")
